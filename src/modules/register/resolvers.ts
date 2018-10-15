@@ -1,3 +1,4 @@
+import { createConfirmEmailLink } from './../../utils/createConfirmEmailLink';
 import * as bcrypt from 'bcryptjs';
 import * as yup from 'yup';
 import { User } from '../../entity/User';
@@ -20,7 +21,7 @@ const schema = yup.object().shape({
 
 export const resolvers: ResolverMap = {
   Mutation: {
-    register: async (_, args: GQL.IRegisterOnMutationArguments) => {
+    register: async (_, args: GQL.IRegisterOnMutationArguments, { redis, url }) => {
       try {
         await schema.validate(args, { abortEarly: false });
       } catch (err) {
@@ -44,6 +45,9 @@ export const resolvers: ResolverMap = {
       });
 
       await user.save();
+
+      const link = await createConfirmEmailLink(url, user.id, redis);
+
       return null;
     }
   },
