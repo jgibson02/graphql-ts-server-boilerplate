@@ -1,11 +1,16 @@
-import { createConfirmEmailLink } from './../../utils/createConfirmEmailLink';
-import * as bcrypt from 'bcryptjs';
-import * as yup from 'yup';
-import { User } from '../../entity/User';
-import { ResolverMap } from '../../types/graphql-utils';
-import { GQL } from '../../types/schema';
-import { formatYupError } from '../../utils/formatYupError';
-import { duplicateEmail, emailNotLongEnough, invalidEmail, passwordNotLongEnough } from './errorMessages';
+import * as bcrypt from "bcryptjs";
+import * as yup from "yup";
+import { User } from "../../entity/User";
+import { ResolverMap } from "../../types/graphql-utils";
+import { GQL } from "../../types/schema";
+import { formatYupError } from "../../utils/formatYupError";
+import { createConfirmEmailLink } from "./../../utils/createConfirmEmailLink";
+import {
+  duplicateEmail,
+  emailNotLongEnough,
+  invalidEmail,
+  passwordNotLongEnough
+} from "./errorMessages";
 
 const schema = yup.object().shape({
   email: yup
@@ -21,37 +26,37 @@ const schema = yup.object().shape({
 
 export const resolvers: ResolverMap = {
   Mutation: {
-    register: async (_, args: GQL.IRegisterOnMutationArguments, { redis, url }) => {
+    register: async (
+      _,
+      args: GQL.IRegisterOnMutationArguments,
+      { redis, url }
+    ) => {
       try {
         await schema.validate(args, { abortEarly: false });
       } catch (err) {
         return formatYupError(err);
       }
       const { email, password } = args;
-      const userAlreadyExists = await User.findOne({ where: { email }, select: ['id'] });
+      const userAlreadyExists = await User.findOne({
+        select: ["id"],
+        where: { email }
+      });
       if (userAlreadyExists) {
-        return [
-          {
-            message: duplicateEmail,
-            path: 'email'
-          }
-        ];
+        return [{ message: duplicateEmail, path: "email" }];
       }
 
       const hashedPassword = await bcrypt.hash(password, 10);
       const user = User.create({
         email,
-        password: hashedPassword,
+        password: hashedPassword
       });
 
       await user.save();
 
-      const link = await createConfirmEmailLink(url, user.id, redis);
+      await createConfirmEmailLink(url, user.id, redis);
 
       return null;
     }
   },
-  Query: {
-    bye: () => "bye"
-  },
-}; 
+  Query: { bye: () => "bye" }
+};

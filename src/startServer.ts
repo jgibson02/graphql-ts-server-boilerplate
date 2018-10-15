@@ -34,16 +34,16 @@ export const startServer = async () => {
     const userID = await redis.get(id);
     if (userID) {
       await User.update({ id: userID }, { confirmed: true });
+      await redis.del(id);
       res.send("ok");
     } else {
       res.send('invalid');
     }
-    
   });
 
   await createTypeORMConn();
   const app = await server.start({
-    port: process.env.NODE_ENV === 'test' ? 0 : 4000 
+    port: process.env.NODE_ENV === 'test ' ? 0 : 4000
   });
   console.log('Server is running on localhost:4000');
 
